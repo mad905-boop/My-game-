@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>لعبة تحدي أو صراحة - فئات مخصصة</title>
+    <style>
+        body { font-family: Tahoma, sans-serif; background: #121212; color: #fff; text-align: center; padding: 30px; }
+        .card { background: #1e1e1e; padding: 25px; border-radius: 12px; display: inline-block; width: 420px; box-shadow: 0 4px 15px rgba(0,0,0,0.6); }
+        input, select { padding: 8px; margin: 5px; border-radius: 5px; border: 1px solid #444; background: #2c2c2c; color: #fff; width: 85%; }
+        button { background: #ff4757; color: white; border: none; padding: 10px 20px; margin: 10px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #ff6b81; }
+        .dare-btn { background: #2ed573; }
+        .dare-btn:hover { background: #7bed9f; }
+        .setup-screen, .game-screen { display: none; }
+        .active { display: block; }
+        .result-box { font-size: 18px; min-height: 90px; margin: 20px 0; background: #2a2a2a; padding: 15px; border-radius: 8px; line-height: 1.6; }
+        .player-row { margin-bottom: 10px; background: #252525; padding: 8px; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>لعبة تحدي أو صراحة</h2>
+
+        <!-- شاشة إدخال أسماء اللاعبين وتحديد نوعهم (بنت / ولد) -->
+        <div id="setup-screen" class="setup-screen active">
+            <p>أدخل أسماء اللاعبين الأربعة مع تحديد الفئة:</p>
+            
+            <div class="player-row">
+                <input type="text" id="p0_name" value="اللاعب 1">
+                <select id="p0_gender">
+                    <option value="boy">ولد</option>
+                    <option value="girl">بنت</option>
+                </select>
+            </div>
+            <div class="player-row">
+                <input type="text" id="p1_name" value="اللاعب 2">
+                <select id="p1_gender">
+                    <option value="boy">ولد</option>
+                    <option value="girl">بنت</option>
+                </select>
+            </div>
+            <div class="player-row">
+                <input type="text" id="p2_name" value="اللاعب 3">
+                <select id="p2_gender">
+                    <option value="boy">ولد</option>
+                    <option value="girl">بنت</option>
+                </select>
+            </div>
+            <div class="player-row">
+                <input type="text" id="p3_name" value="اللاعب 4">
+                <select id="p3_gender">
+                    <option value="boy">ولد</option>
+                    <option value="girl">بنت</option>
+                </select>
+            </div>
+
+            <button onclick="startGame()">ابدأ اللعبة</button>
+        </div>
+
+        <!-- شاشة اللعبة الرئيسية -->
+        <div id="game-screen" class="game-screen">
+            <h3 id="player-turn" style="color: #ffa502;">دور اللاعب: -</h3>
+            <div class="result-box" id="game-text">اضغط على زر اختيار اللاعب للبدء!</div>
+            
+            <div id="choices" style="display:none;">
+                <button onclick="getTruth()">صراحة (أسئلة حب موحدة)</button>
+                <button class="dare-btn" onclick="getDare()">تحدي (خاص بالفئة)</button>
+            </div>
+            
+            <button onclick="randomPlayerTurn()" id="next-btn">اختيار لاعب عشوائياً</button>
+        </div>
+    </div>
+
+    <script>
+        let players = [];
+
+        // أسئلة الصراحة (موحدة للجميع عن الحب والمشاعر)
+        const truths = [
+            "هل لديك حبيب حالياً؟ صف شعورك باختصار.",
+            "هل لديك حبيب سابق ما زلت تتذكر تفاصيل معه؟",
+            "هل تحب أن يتم تجاهلك أحياناً أم تعتبره إهانة؟",
+            "ما هي الصفة الأكثر جاذبية بالنسبة لك في شريك حياتك المستقبلي؟",
+            "هل أُعجبت بشخص سراً ولم تملك الشجاعة لإخباره أبداً؟",
+            "ما هو الموقف الرومانسي أو اللطيف الذي تتمنى أن يفعله شخص لأجلك؟",
+            "هل تؤمن بالحب من أول نظرة؟"
+        ];
+
+        // تحديات خاصة بالأولاد (تمارين وقوة منزلية)
+        const boyDares = [
+            "قم بعمل 15 تمرين ضغط (Push-ups) متتالية.",
+            "اثبت على وضعية بلانك (Plank) بقوة لمدة 50 ثانية.",
+            "قم بعمل 20 تمرين سكوات (Squats) بدون توقف.",
+            "قم بعمل 10 تمرينات بطن (Crunches) الآن.",
+            "امشِ في الغرفة بخطوات ثابتة وغاضبة مضحكة لمدة 30 ثانية."
+        ];
+
+        // تحديات خاصة البنات (تمارين خفيفة ومرونة منزلية)
+        const girlDares = [
+            "قم بعمل 10 تمرينات سكوات (Squats) خفيفة.",
+            "اثبت على وضعية ثبات الخصر والوقوف بثبات لمدة 40 ثانية.",
+            "قومي بعمل تمرين التمدد لمدّ الذراعين والساقين لمدة 30 ثانية.",
+            "امشِ بوضعية عارضة أزياء (ممشى أزياء) في الغرفة لمدة 30 ثانية.",
+            "قومي بعمل 10 تمرينات تمدد خفيفة للبطن والظهر."
+        ];
+
+        function startGame() {
+            players = [];
+            for (let i = 0; i < 4; i++) {
+                let name = document.getElementById(`p${i}_name`).value;
+                let gender = document.getElementById(`p${i}_gender`).value;
+                players.push({ name: name, gender: gender });
+            }
+
+            document.getElementById("setup-screen").classList.remove("active");
+            document.getElementById("game-screen").classList.add("active");
+            randomPlayerTurn();
+        }
+
+        let currentActivePlayer = null;
+
+        function randomPlayerTurn() {
+            // اختيار لاعب عشوائي
+            let randomIndex = Math.floor(Math.random() * players.length);
+            currentActivePlayer = players[randomIndex];
+
+            let genderText = currentActivePlayer.gender === 'boy' ? '👦 (ولد)' : '👧 (بنت)';
+            
+            document.getElementById("player-turn").innerText = `دور اللاعب: ${currentActivePlayer.name} ${genderText}`;
+            document.getElementById("game-text").innerText = `يا ${currentActivePlayer.name}، اختر ماذا ترغب:`;
+            document.getElementById("choices").style.display = "block";
+            document.getElementById("next-btn").style.display = "none";
+        }
+
+        function getTruth() {
+            let randomTruth = truths[Math.floor(Math.random() * truths.length)];
+            document.getElementById("game-text").innerHTML = `💬 **سؤال صراحة (موحد) لـ ${currentActivePlayer.name}:**<br><br>${randomTruth}`;
+            finishTurn();
+        }
+
+        function getDare() {
+            let selectedDareList = currentActivePlayer.gender === 'boy' ? boyDares : girlDares;
+            let randomDare = selectedDareList[Math.floor(Math.random() * selectedDareList.length)];
+            
+            let dareTitle = currentActivePlayer.gender === 'boy' ? "تحدي رياضي للأولاد" : "تحدي منزلي للبنات";
+            
+            document.getElementById("game-text").innerHTML = `🔥 **${dareTitle} لـ ${currentActivePlayer.name}:**<br><br>${randomDare}`;
+            finishTurn();
+        }
+
+        function finishTurn() {
+            document.getElementById("choices").style.display = "none";
+            document.getElementById("next-btn").style.display = "inline-block";
+            document.getElementById("next-btn").innerText = "لاعب عشوائي جديد";
+        }
+    </script>
+</body>
+  </html>
+          
